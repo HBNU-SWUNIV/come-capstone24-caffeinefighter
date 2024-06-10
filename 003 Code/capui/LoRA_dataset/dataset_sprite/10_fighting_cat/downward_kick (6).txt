@@ -1,0 +1,1 @@
+sprite, cat, fighter, downward_kick

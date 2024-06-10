@@ -1,0 +1,56 @@
+{
+    "os": "Windows-10-10.0.19045-SP0",
+    "python": "3.10.9",
+    "heartbeatAt": "2024-06-05T09:08:05.202548",
+    "startedAt": "2024-06-05T09:08:04.364358",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--config_file",
+        "./outputs/tmpfilelora.toml"
+    ],
+    "state": "running",
+    "program": "D:\\WebUI\\kohya_beta\\kohya_ss\\sd-scripts\\train_network.py",
+    "codePathLocal": "sd-scripts\\train_network.py",
+    "codePath": "sd-scripts\\train_network.py",
+    "git": {
+        "remote": "https://github.com/bmaltais/kohya_ss.git",
+        "commit": "80091ee701462e0a341ffbb693b9ee81f628d5fd"
+    },
+    "email": "wsdewsde27@gmail.com",
+    "root": "D:/WebUI/kohya_beta/kohya_ss",
+    "host": "Cinnamon",
+    "username": "Cinnamon",
+    "executable": "D:\\WebUI\\kohya_beta\\kohya_ss\\venv\\Scripts\\python.exe",
+    "cpu_count": 8,
+    "cpu_count_logical": 16,
+    "cpu_freq": {
+        "current": 3301.0,
+        "min": 0.0,
+        "max": 3301.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3301.0,
+            "min": 0.0,
+            "max": 3301.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 1862.9999961853027,
+            "used": 1660.2782669067383
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+            "memory_total": 6442450944
+        }
+    ],
+    "memory": {
+        "total": 31.406524658203125
+    }
+}

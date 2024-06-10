@@ -1,0 +1,1 @@
+sprite, male, samurai, commander, running

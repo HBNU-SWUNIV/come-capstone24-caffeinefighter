@@ -1,0 +1,1 @@
+sprite, cat, fighter, one_two_combo

@@ -1,0 +1,17 @@
+asphalt		50
+grass		57
+gravel		58
+leather		50
+marble		48
+metal		60
+paper		68
+real_rock_texture	25
+real_wood_texture	25
+sand		50
+snow		50
+soil		50
+tile		50
+wall_brick		50
+wall_concrete	50
+wall_stone	50
+wood_texture	50

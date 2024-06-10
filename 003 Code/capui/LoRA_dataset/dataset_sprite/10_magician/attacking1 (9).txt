@@ -1,0 +1,1 @@
+sprite, female, magician, attacking

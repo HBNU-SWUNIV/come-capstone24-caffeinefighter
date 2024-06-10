@@ -1,0 +1,1 @@
+sprite, male, cyborg, jumping

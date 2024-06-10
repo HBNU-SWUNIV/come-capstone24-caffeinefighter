@@ -1,0 +1,1 @@
+sprite, drone, dying

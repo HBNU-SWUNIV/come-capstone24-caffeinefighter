@@ -1,0 +1,1 @@
+sprite, electric_eel, attacking

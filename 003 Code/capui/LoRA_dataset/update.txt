@@ -1,0 +1,35 @@
+﻿전에 사진들 몇개 수정
+concrete_wall 캡션추가
+금간: cracked
+사진추가(paper, grass)
+paper 캡션
+구겨진: creased
+선이 그어진: drawing_lines
+grass 캡션
+꽃 포함: flower
+sand 대거 수정
+캡션 추가
+바닷가: beach
+흑백: black_and_white
+asphalt 대거 수정
+rooftop 삭제
+sprite 추가
+----------------------------------------------------------------------
+캡션 수정
+전에 사진들 몇개 수정
+사진 추가(gravel, metal,rock texture, wood texture)
+gravel 캡션
+각진 돌: angled
+둥근 돌: round
+자갈을 제외한 약간의 흙이나 다른 것들이 보이면: ground
+metal 캡션
+녹슨것: rusty
+rock texture, wood texture는 자연의 돌과 나무를 모은거라 25개씩만 모았는데 더 필요하면 말하면 더 모아줌
+캡션은 이름에 nature만 추가
+----------------------------------------------------------------------
+asphalt, rooftop 캡션
+비온것: wet
+soil 캡션
+마른 흙: dry
+sand 캡션
+사막: desert

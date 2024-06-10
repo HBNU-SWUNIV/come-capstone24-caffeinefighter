@@ -1,0 +1,1 @@
+sprite, chicken, waiting, side

@@ -1,0 +1,13 @@
+gradio 4.26.0
+
+install python 3.10.9
+
+run install.bat
+
+when install is completed, unzip Lora and run Move_LoRA_Files.bat and Move_config.bat
+
+close all cmd windows
+
+run install_requirements.bat
+
+run start.bat
