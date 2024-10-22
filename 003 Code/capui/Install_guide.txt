@@ -1,6 +1,6 @@
-gradio 4.26.0
+run install_1.bat
 
-install python 3.10.9
+go to capui folder
 
 run install.bat
 
@@ -9,5 +9,7 @@ when install is completed, unzip Lora and run Move_LoRA_Files.bat and Move_confi
 close all cmd windows
 
 run install_requirements.bat
+
+venv/Lib/site-packages/googletrans내의 client.py파일을 capui내의 파일로 교체해주어야 작동함
 
 run start.bat

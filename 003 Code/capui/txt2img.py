@@ -6,8 +6,8 @@ import numpy as np
 
 model = torch.hub.load("yolov5", 'custom', "yolov5\yolov5s.pt", source='local')
 
-def generate_image(prompt, negative_prompt, step_slider, width_slider, height_slider, model_dropdown, lora_dropdown):
-    # prompt += ", " + lora_dropdown
+def generate_image(prompt, negative_prompt, applied_lora, step_slider, width_slider, height_slider, model_dropdown, lora_dropdown):
+    prompt += applied_lora
     negative_prompt += ", nsfw"
     api_client.change_model(model_dropdown)
     result = api_client.api.txt2img(

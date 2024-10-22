@@ -1,8 +1,9 @@
 import api_client
 from PIL import Image
 
-def generate_img2img(i2i_input, prompt, negative_prompt, step_slider, width_slider, height_slider, denoising_strength, model_dropdown, lora_dropdown):
+def generate_img2img(i2i_input, prompt, negative_prompt, applied_lora, step_slider, width_slider, height_slider, denoising_strength, model_dropdown, lora_dropdown):
     # prompt += ", " + lora_dropdown
+    prompt += applied_lora
     negative_prompt += ", nsfw"
     api_client.change_model(model_dropdown)
     result2 = api_client.api.img2img(

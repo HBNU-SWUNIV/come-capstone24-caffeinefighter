@@ -3,3 +3,5 @@ attr
 gradio
 aiohttp
 rembg
+install flash-attn --no-build-isolation
+googletrans==4.0.0-rc1

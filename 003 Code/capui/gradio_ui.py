@@ -1,32 +1,21 @@
 import gradio as gr
 import txt2img
 import img2img
-# import inpaint
+import inpaint
 import os
 import img_viewer
-import background_remover
+import background_remover_yolo
+import background_remover_florence
 import api_client
 
-##
-## 아래 코드들 사용해보기
-## 
-## 아래 코드를 이용해 progress bar 만들어보기
-## def progress():
-##     return api.util_wait_for_ready()
-##
-## txt2img.py에서 이미지를 생성 버튼을 누를 때마다 모델이 바뀌는 것이 아닌 드롭다운에서 모델을 선택하면 바뀌는 것으로 아래 코드를 이용하여 수정
-## api_client.api.util_set_model()
-##
-## 아래 코드를 이용하여 model refresh 구현해보기
-## api_client.api.refresh_checkpoints()
-##
-## Unity Folder로 이미지 이동하는 코드 추가 필요
-##
+from googletrans import Translator
 
+# 프롬프트에 로라 추가 시 필요
 def add_loras(lora_name):
     lora = "<lora:" + lora_name + ":1>"
     return lora
 
+# 파일 관리자에서 폴더 열기
 def open_folder(model_input_path):
     model_input_path = "stable-diffusion-webui\models\Stable-diffusion"
     try:
@@ -51,44 +40,44 @@ def open_removed_folder(model_input_path):
     except Exception as e:
         return f"오류가 발생했습니다: {e}"
 
-def get_model_names(modelfolder_path, extensions):
-    try:
-        # 폴더 내의 모든 파일과 폴더를 리스트로 가져옵니다.
-        all_files = os.listdir(modelfolder_path)
-        # 지정된 확장자를 가진 파일들을 필터링합니다.
-        model_names = [file for file in all_files if file.endswith(extensions)]
-        return model_names
-    except Exception as e:
-        return f"오류가 발생했습니다: {e}"
-
 lorafolder_path = "stable-diffusion-webui\models\Lora"
 extensions = (".ckpt", ".safetensors")
 
+#모델들, 현재 모델, 로라 이름 받아오기
 model_names = api_client.api.util_get_model_names()
 current_model = api_client.api.util_get_current_model()
-# lora_names = get_model_names(lorafolder_path, extensions)
 lora_names = api_client.api.util_get_lora_names()
 
-lora_list = [
-        ('None', ''), 
-        ('Texture_1', 'texture,  <lora:texture_1:1>'), 
-        ('Sprite_1_epoch_1', 'sprite,  <lora:sprite_1-000001:0.8>'), 
-        ('Sprite_1_epoch_2', 'sprite,  <lora:sprite_1:0.8>'), 
-        ('Texture', 'diffuse texture, <lora:DiffuseTexture_v11:1>'), 
-        ('Metal Texture', 'metal texture, <lora:dirtymetal_textures_1:0.8>'), 
-        ('Old school Texture', 'texture, old school, quake, <lora:Quake_Lora:1>'), 
-        ('Book', 'book, <lora:FantasyIcons_Books_noFlip:1>'), 
-        ('Gemstone', 'gemstone, <lora:FantasyIcons_Gemstones:1>'), 
-        ('pixel sprites', 'pixel, pixel art, pixelart, xiangsu, xiang su, <lora:pixel sprites:1>'), 
-        ('PixelAnimal', 'animal, pixel, pixel art, pixelart, xiangsu, xiang su, <lora:PixelAnimal:1>'), 
-        ('Pixel Weapon(axe, sword, bow)', 'weapon, no humans, pixel, pixel art, pixelart, <lora:pixel sword:1>'), 
-        ('Pixel Gun', 'gun, no humans, pixel, pixel art, pixelart, <lora:pixel gun:1>'), 
-        ('Pixel Book', 'boox,pixel, pixel art, pixelart, xiangsu, xiang su, <lora:pixel book:1>'), 
-        ('Pixel Bottle', 'bottle,pixel, pixel art, pixelart, xiangsu, xiang su, simple background, <lora:Pixel bottle:1>'), 
-        ('Pixel Isometry', '((Isometry)), pixel, pixel art, solo, <lora:Pixel_Building2:1>'), 
-        ]
+language_options = {
+    'auto': 'Auto Detection',
+    'zh-cn': 'Chinese(Simplified)',
+    'zh-tw': 'Chinese(traditional)',
+    'en': 'English',
+    'fr': 'French',
+    'de': 'German',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'pl': 'Polish',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'es': 'Spanish',
+    'tr': 'Turkish'
+}
 
 theme = gr.themes.Monochrome()
+
+#################################################
+################### Translate ###################
+#################################################
+
+translator = Translator()
+
+def translate_prompt(prompt,lang):
+    try:
+        translated = translator.translate(prompt, src= lang, dest='en')
+        return translated.text
+    except Exception as e:
+        return f"번역 오류: {e}"
 
 #################################################
 #################### Txt2Img ####################
@@ -97,6 +86,12 @@ theme = gr.themes.Monochrome()
 with gr.Blocks() as text_to_img:
     with gr.Row():
         with gr.Column():
+            lang_dropdown = gr.Dropdown(
+                choices=[(name, code) for code, name in language_options.items()],
+                label="Input Language",
+                value="auto", 
+                show_label=True,
+            )
             prompt = gr.Textbox(
                 label="Prompt",
                 show_label=True,
@@ -108,6 +103,11 @@ with gr.Blocks() as text_to_img:
                 show_label=True,
                 max_lines=2,
                 placeholder="Enter Negative prompt"
+            )
+            applied_lora = gr.Textbox(
+                label="Applied LoRA",
+                show_label=True,
+                max_lines=2,
             )
             step_slider = gr.Slider(
                 value=20,
@@ -160,18 +160,35 @@ with gr.Blocks() as text_to_img:
             lora_dropdown.change(
             fn=add_loras,
             inputs=lora_dropdown, 
-            outputs=prompt, 
+            outputs=applied_lora, 
             )
         with gr.Column():
             generate_button = gr.Button("Generate Image")
             t2i_result = gr.Image()
+            translated_positive_prompt = gr.Textbox(
+                label="Translated Positive Prompt",
+                show_label=True,
+                interactive=False
+            )
+            translated_negative_prompt = gr.Textbox(
+                label="Translated Negative Prompt",
+                show_label=True,
+                interactive=False
+            )
+
+        # 번 역 부 분 #
+        def generate_image_with_translation(prompt, negative_prompt, applied_lora, steps, width, height, model_name, lora_name, lang):
+            prompt_en = translate_prompt(prompt, lang) 
+            negative_prompt_en = translate_prompt(negative_prompt,lang)  
+            return txt2img.generate_image(prompt_en, negative_prompt_en, applied_lora, steps, width, height, model_name, lora_name), prompt_en, negative_prompt_en
 
         generate_button.click(
-            fn=txt2img.generate_image,
-            inputs=[prompt, negative_prompt, step_slider, width_slider, height_slider, model_dropdown, lora_dropdown],
-            outputs=t2i_result
+            fn=generate_image_with_translation,
+            #fn=txt2img.generate_image,
+            inputs=[prompt, negative_prompt, applied_lora, step_slider, width_slider, height_slider, model_dropdown, lora_dropdown, lang_dropdown],
+            outputs=[t2i_result, translated_positive_prompt, translated_negative_prompt]
             )
-        
+
 
 #################################################
 #################### Img2Img ####################
@@ -181,6 +198,12 @@ with gr.Blocks() as img_to_img:
     with gr.Row():
         with gr.Column():
             i2i_input = gr.Image(show_label=False)
+            lang_dropdown = gr.Dropdown(
+                choices=[(name, code) for code, name in language_options.items()],
+                label="Input Language",
+                value="auto", 
+                show_label=True,
+            )
             i2i_prompt = gr.Textbox(
                 label="Prompt",
                 show_label=True,
@@ -192,6 +215,11 @@ with gr.Blocks() as img_to_img:
                 show_label=True,
                 max_lines=2,
                 placeholder="Enter Negative prompt", 
+            )
+            i2i_applied_lora = gr.Textbox(
+                label="Applied LoRA",
+                show_label=True,
+                max_lines=2,
             )
             i2i_step_slider = gr.Slider(
                 value=20,
@@ -217,7 +245,7 @@ with gr.Blocks() as img_to_img:
                 show_label=True, 
                 step=64
             )
-            denoising_strength_silder = gr.Slider(
+            i2i_denoising_strength_silder = gr.Slider(
                 value=0.6,
                 minimum=0,
                 maximum=1,
@@ -250,22 +278,152 @@ with gr.Blocks() as img_to_img:
             i2i_lora_dropdown.change(
             fn=add_loras,
             inputs=i2i_lora_dropdown, 
-            outputs=i2i_prompt, 
+            outputs=i2i_applied_lora, 
             )
         with gr.Column():
             generate_button = gr.Button("Generate Image")
             i2i_result = gr.Image()
+            translated_positive_prompt = gr.Textbox(
+                label="Translated Positive Prompt",
+                show_label=True,
+                interactive=False
+            )
+            translated_negative_prompt = gr.Textbox(
+                label="Translated Negative Prompt",
+                show_label=True,
+                interactive=False
+            )
 
+        def generate_image_with_translation(i2i_input, i2i_prompt, i2i_negative_prompt, i2i_applied_lora, steps, width, height, denoising_strength, model_name, lora_name, lang):
+            i2i_prompt_en = translate_prompt(i2i_prompt, lang) 
+            i2i_negative_prompt_en = translate_prompt(i2i_negative_prompt, lang)  
+            return img2img.generate_img2img(i2i_input, i2i_prompt_en, i2i_negative_prompt_en, i2i_applied_lora, steps, width, height, denoising_strength, model_name, lora_name), i2i_prompt_en, i2i_negative_prompt_en
+        
         generate_button.click(
-            fn=img2img.generate_img2img,
-            inputs=[i2i_input, i2i_prompt, i2i_negative_prompt, i2i_step_slider, i2i_width_slider, i2i_height_slider, denoising_strength_silder, i2i_model_dropdown, i2i_lora_dropdown],
-            outputs=i2i_result
+            fn=generate_image_with_translation,
+            #fn=img2img.generate_img2img,
+            inputs=[i2i_input, i2i_prompt, i2i_negative_prompt, i2i_applied_lora, i2i_step_slider, i2i_width_slider, i2i_height_slider, i2i_denoising_strength_silder, i2i_model_dropdown, i2i_lora_dropdown, lang_dropdown],
+            outputs=[i2i_result, translated_positive_prompt, translated_negative_prompt]
             )
         
 #################################################
 #################### Inpaint ####################
 #################################################
+
+with gr.Blocks() as inpaint_tab:
+    with gr.Row():
+        with gr.Column():
+            in_mask = gr.ImageMask(
+                label="Inpaint", 
+                show_label=True, 
+            )
+            lang_dropdown = gr.Dropdown(
+                choices=[(name, code) for code, name in language_options.items()],
+                label="Input Language",
+                value="auto", 
+                show_label=True,
+            )
+            in_prompt = gr.Textbox(
+                label="Prompt",
+                show_label=True,
+                max_lines=2,
+                placeholder="Enter positive prompt", 
+            )
+            in_negative_prompt = gr.Textbox(
+                label="Negative Prompt",
+                show_label=True,
+                max_lines=2,
+                placeholder="Enter Negative prompt", 
+            )
+            in_applied_lora = gr.Textbox(
+                label="Applied LoRA",
+                show_label=True,
+                max_lines=2,
+            )
+            in_step_slider = gr.Slider(
+                value=20,
+                minimum=1,
+                maximum=100,
+                label="Step",
+                show_label=True, 
+                step=1
+            )
+            in_width_slider = gr.Slider(
+                value=512,
+                minimum=256,
+                maximum=2048,
+                label="Width",
+                show_label=True, 
+                step=64
+            )
+            in_height_slider = gr.Slider(
+                value=512,
+                minimum=256,
+                maximum=2048,
+                label="Height",
+                show_label=True, 
+                step=64
+            )
+            in_denoising_strength_silder = gr.Slider(
+                value=0.6,
+                minimum=0,
+                maximum=1,
+                label="Denoising Strength",
+                show_label=True, 
+                step=0.05
+            )
+            with gr.Row():
+                in_model_dropdown = gr.Dropdown(
+                    choices=model_names,
+                    # value="v1-5-pruned-emaonly.safetensors [6ce0161689]", 
+                    value="anyloraCheckpoint_bakedvaeBlessedFp16.safetensors [5353d90e0c]", 
+                    label="Select an Model", 
+                    show_label=True, 
+                    scale=4, 
+                )
+                model_open_button = gr.Button(
+                    value="Open Model Folder", 
+                    interactive=True, 
+                    scale=1, 
+                )
+                model_open_button.click(fn=open_folder, inputs=[], outputs=[])
+            in_lora_dropdown = gr.Dropdown(
+                # choices=lora_list,
+                choices=lora_names,
+                # value='', 
+                label="Select an LoRA",
+                show_label=True, 
+            )
+            in_lora_dropdown.change(
+            fn=add_loras,
+            inputs=in_lora_dropdown, 
+            outputs=in_applied_lora, 
+            )
+        with gr.Column():
+            generate_button = gr.Button("Generate Image")
+            in_result = gr.Image()
+            translated_positive_prompt = gr.Textbox(
+                label="Translated Positive Prompt",
+                show_label=True,
+                interactive=False
+            )
+            translated_negative_prompt = gr.Textbox(
+                label="Translated Negative Prompt",
+                show_label=True,
+                interactive=False
+            )
+
+        def generate_image_with_translation(in_mask,in_prompt, in_negative_prompt, in_applied_lora, steps, width, height, denoising_strength, model_name, lora_name, lang):
+            in_prompt_en = translate_prompt(in_prompt, lang) 
+            in_negative_prompt_en = translate_prompt(in_negative_prompt, lang)  
+            return inpaint.generate_inpaint(in_mask, in_prompt_en, in_negative_prompt_en, in_applied_lora, steps, width, height, denoising_strength, model_name, lora_name), in_prompt_en, in_negative_prompt_en
         
+        generate_button.click(
+            fn=generate_image_with_translation, 
+            inputs=[in_mask, in_prompt, in_negative_prompt, in_applied_lora, in_step_slider, in_width_slider, in_height_slider, in_denoising_strength_silder, in_model_dropdown, in_lora_dropdown, lang_dropdown],
+            outputs=[in_result, translated_positive_prompt, translated_negative_prompt]
+            )
+
 ################################################
 ################# Image Viewer #################
 ################################################
@@ -273,6 +431,9 @@ with gr.Blocks() as img_to_img:
 with gr.Blocks() as img_viewer_tab:
     with gr.Row():
         with gr.Column():
+            # def update_choices():
+            #     choices=img_viewer.get_folders_in_directory("stable-diffusion-webui/output/txt2img-images")
+            #     return gr.Dropdown(choices=choices, interactive=True)=
             t2i_folder_dropdown = gr.Dropdown(
                 label="txt2img Folder Path",
                 choices=img_viewer.get_folders_in_directory("stable-diffusion-webui/output/txt2img-images"),
@@ -312,6 +473,10 @@ with gr.Blocks() as img_viewer_tab:
             inputs=bgremoved_folder_dropdown, 
             outputs=img_view_result, 
         )
+        # t2i_refresh_button.click(
+        #     fn=img_viewer.load_images_from_folder,
+        #     outputs=t2i_folder_dropdown
+        # )
         t2i_refresh_button.click(
             fn=img_viewer.load_images_from_folder,
             inputs=t2i_folder_dropdown, 
@@ -327,7 +492,7 @@ with gr.Blocks() as img_viewer_tab:
             inputs=bgremoved_folder_dropdown, 
             outputs=img_view_result
         )
-        
+
 ################################################
 ############## Background Remover ##############
 ################################################
@@ -335,9 +500,10 @@ with gr.Blocks() as img_viewer_tab:
 with gr.Blocks() as background_remover_tab:
     with gr.Row():
         with gr.Column():
-            yolo_image = gr.Image(
+            yolo_image = gr.File(
                 type="filepath", 
-                label="Upload Image"
+                label="Upload Image",
+                file_count='multiple',
                 )
             button = gr.Button(
                 value="Open Background removed Folder", 
@@ -346,15 +512,13 @@ with gr.Blocks() as background_remover_tab:
             button.click(fn=open_removed_folder, inputs=[], outputs=[])
         with gr.Column():
             remove_button = gr.Button("Start")
-            removed_image = [gr.Image(
-                label="Image with Bounding Boxes"
-            ), 
-            gr.Image(
-                label="Cropped & Background Removed Image"
-            )
+            removed_image = [
+                gr.Gallery(label="Image with Bounding Boxes"), 
+                gr.Gallery(label="Cropped & Background Removed Image")
             ]
         remove_button.click(
-                fn=background_remover.background_remover_and_bbox,
+                # fn=background_remover_yolo.background_remover_and_bbox,
+                fn=background_remover_florence.background_remover_and_bbox,
                 inputs=yolo_image,
                 outputs=removed_image,
             )
@@ -364,7 +528,7 @@ with gr.Blocks() as background_remover_tab:
 #################################################
 
 demo = gr.TabbedInterface(
-    [text_to_img, img_to_img, background_remover_tab, img_viewer_tab], ["txt2img", "img2img", "Background Remover", "Image Viewer"], 
+    [text_to_img, img_to_img, inpaint_tab, background_remover_tab, img_viewer_tab], ["txt2img", "img2img", "Inpaint", "Background Remover", "Image Viewer"], 
     title="Asset Generator",
     theme=theme
 )
